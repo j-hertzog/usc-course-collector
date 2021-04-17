@@ -46,10 +46,14 @@ async fn get_html(path: &str) -> String  {
 async fn main() -> std::result::Result<(), Box<dyn Error>> {
 
     let path = "https://classes.usc.edu/term-20211/";
-
+    
+    /* list of all subjects in a "school" */
     let mut schools: HashMap<String, Vec<Subject>> = HashMap::new();
+
+    /* collection of data that gets converted to json */
     let mut json_schools: Vec<School> = Vec::new();
 
+    /* get request to fetch all the subjects from the catalogue page */
     let catalogue_html: &str = &get_html(path).await;
     let catalogue_document = Document::from(catalogue_html);
 
@@ -76,7 +80,7 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
         };
 
         schools
-            .entry(school_name.clone())
+            .entry(school_name)
             .or_insert_with(Vec::new)
             .push(sub);
     }
@@ -86,19 +90,21 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
         let mut school: School = School::default();
         school.school_name = key.clone();
 
-        for subject in value {
-            let new_path = format!("{}classes/{}", path, &subject.code);
+        for sub in value {
+            let new_path = format!("{}classes/{}", path, &sub.code);
 
-            // get request to fetch all the courses from a specific subject
+            /* get request to fetch all the courses from a specific subject page */
             let subject_html: &str = &get_html(&new_path).await;
             let subject_document = Document::from(subject_html);
-            let mut new_sub: Subject = Subject::default();
-            new_sub.name = subject.name.clone();
-            new_sub.code = subject.code.clone();
+
+
+            let mut subject: Subject = sub.clone();
 
             for node in subject_document.find(Class("course-table").descendant(Class("course-info"))) {
+
                 let mut new_course = Course::default();
 
+                /* get the course code of the course */
                 match node.attr("id") {
                     Some(value) => { 
                         new_course.course_code = value.to_string();
@@ -106,6 +112,7 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
                     None => {}
                 }
 
+                /* get the title of the course */
                 let mut title = node.find(Name("h3")
                     .descendant(Name("a")))
                     .next()
@@ -119,20 +126,26 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
                 title.replace_range(e_index..title.len(), "");
 
                 new_course.course_title = title.to_string();
-                new_sub.courses.push(new_course.clone());
+                subject.courses.push(new_course.clone());
             }
-            school.subjects.push(new_sub.clone());
+
+            school.subjects.push(subject);
+
+            /* slow down speed racer... */
             sleep(Duration::from_millis(500)).await;
-            println!("[ {} ] has been read...", subject.name);
+            println!("[ {} ] has been read...", sub.name);
 
             if DEBUG { break; }
         }
+
         json_schools.push(school.clone());
+
         if DEBUG { break; }
     }
+
+    /* write the json_schools vector to file */
     let buffer = File::create("usc.json")?;
     let _serialized = serde_json::to_writer_pretty(buffer, &json_schools).unwrap();
 
     Ok(())
 }
-
