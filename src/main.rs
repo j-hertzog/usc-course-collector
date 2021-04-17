@@ -3,7 +3,6 @@ use select::document::Document;
 use select::predicate::{Attr, Class, Name, Predicate};
 use std::collections::HashMap;
 use std::error::Error;
-use tokio::time::{sleep, Duration};
 use serde::{Deserialize, Serialize};
 
 //only downloads one school + one subject
@@ -28,6 +27,74 @@ struct Course {
     course_title: String, 
 }
 
+#[tokio::main]
+async fn main() -> std::result::Result<(), Box<dyn Error>> {
+
+    /* user prompt */
+    let semester_options: &str = &get_html("https://classes.usc.edu/").await;
+    let semester_document = Document::from(semester_options);
+
+    let mut semesters: Vec<(String, String)> = Vec::with_capacity(3);
+
+    for node in semester_document.find(Class("terms").descendant(Name("li"))) {
+        let semester_id = node.attr("id").unwrap();
+        let mut semester_name = node.find(Name("h3")).next().unwrap().text();
+
+        let s_index = semester_name.find("TERM").unwrap_or(semester_name.len());
+        semester_name.replace_range(s_index..semester_name.len(), "");
+        semesters.push((semester_id.to_string(), semester_name));
+    }
+
+    println!("\nWhat semester would you like to download?");
+    println!("/---------------------------------------/");
+
+    let mut i = 1;
+    for (_, name) in &semesters {
+        println!("{}. {}", i, name);
+        i += 1;
+    }
+
+    let mut input = String::new();
+    let index:usize;
+    
+    match std::io::stdin().read_line(&mut input) {
+        Ok(_) => { 
+            match input.trim_end().parse() {
+                Ok(result) => {
+                    index = result;        
+                    if index > semesters.len() || index <= 0 {
+                        println!("Invalid selection, please try again");
+                        return Ok(());
+                    }
+                    println!();
+                }
+                Err(_) => {
+                    println!("Invalid selection, please try again");
+                    return Ok(());
+                }
+
+            }
+        }
+        Err(_) => {
+            println!("Error reading input");
+            return Ok(());
+        }
+    }
+    
+    let path = format!("https://classes.usc.edu/{}/...", &semesters[index-1].0);
+    println!("Downloading: {}\n", path);
+
+    match download_courses(&path).await {
+        Ok(_) => {
+            println!("Finished downloading courses.")
+        }
+        Err(_) => { 
+            println!("Error downloading courses.")
+        }
+    }
+    Ok(())
+}
+
 async fn get_html(path: &str) -> String  {
     match reqwest::get(path).await {
         Ok(resp) => {
@@ -42,11 +109,8 @@ async fn get_html(path: &str) -> String  {
     }
 }
 
-#[tokio::main]
-async fn main() -> std::result::Result<(), Box<dyn Error>> {
+async fn download_courses(term: &str) -> std::result::Result<(), Box<dyn Error>> {
 
-    let path = "https://classes.usc.edu/term-20211/";
-    
     /* list of all subjects in a "school" */
     let mut schools: HashMap<String, Vec<Subject>> = HashMap::new();
 
@@ -54,7 +118,7 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
     let mut json_schools: Vec<School> = Vec::new();
 
     /* get request to fetch all the subjects from the catalogue page */
-    let catalogue_html: &str = &get_html(path).await;
+    let catalogue_html: &str = &get_html(term).await;
     let catalogue_document = Document::from(catalogue_html);
 
     println!("# Schools");
@@ -86,12 +150,12 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
     }
 
     for (key, value) in &schools {
-        println!("=== {} ===", key);
+        println!("[ {} ]", key);
         let mut school: School = School::default();
         school.school_name = key.clone();
 
         for sub in value {
-            let new_path = format!("{}classes/{}", path, &sub.code);
+            let new_path = format!("{}classes/{}", term, &sub.code);
 
             /* get request to fetch all the courses from a specific subject page */
             let subject_html: &str = &get_html(&new_path).await;
@@ -113,8 +177,7 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
                 }
 
                 /* get the title of the course */
-                let mut title = node.find(Name("h3")
-                    .descendant(Name("a")))
+                let mut title = node.find(Name("h3").descendant(Name("a")))
                     .next()
                     .unwrap()
                     .text();
@@ -131,14 +194,13 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
 
             school.subjects.push(subject);
 
-            /* slow down speed racer... */
-            sleep(Duration::from_millis(500)).await;
-            println!("[ {} ] has been read...", sub.name);
+            println!("  - {} has been read...", sub.name);
 
             if DEBUG { break; }
         }
 
         json_schools.push(school.clone());
+        println!();
 
         if DEBUG { break; }
     }
