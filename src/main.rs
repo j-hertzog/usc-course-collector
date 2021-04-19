@@ -206,7 +206,7 @@ async fn download_courses(term: &str) -> std::result::Result<(), Box<dyn Error>>
     }
 
     /* write the json_schools vector to file */
-    let buffer = File::create("usc.json")?;
+    let buffer = File::create("courses.json")?;
     let _serialized = serde_json::to_writer_pretty(buffer, &json_schools).unwrap();
 
     Ok(())

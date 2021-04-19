@@ -1,10 +1,10 @@
 # USC Course Collector
-A lightweight rust program that downloads all of the courses for a given semester at USC in a simple JSON format.
+A lightweight rust program that downloads all of the courses offered in a USC semester in a simple JSON format.
 
-![gif](course-collector.gif) 
+![gif](course-collector.gif =550x330) 
 
 ## Output Format
-As shown below the courses output is organized by 'Subjects' which are in turn organized into 'Schools'.
+As shown below the courses output is organized by *subjects* which are in turn organized into *schools*.
 ```
 [
       {
@@ -38,9 +38,8 @@ As shown below the courses output is organized by 'Subjects' which are in turn o
 ```
 
 ## Installation
-- Requires [rust]() to be installed.
-- '**cargo run**' to start scraping.
-
+- Requires [rust](https://www.rust-lang.org/tools/install) to be installed.
+- '**cargo run**' to start the scraping.
 
 ##### Project Dependencies
 - [tokio](https://github.com/tokio-rs/tokio) for asynchronous web requests.
