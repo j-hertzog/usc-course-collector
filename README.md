@@ -1,7 +1,7 @@
 # USC Course Collector
 A lightweight rust program that downloads all of the courses offered in a USC semester in a simple JSON format.
 
-![gif](course-collector.gif =550x330) 
+![gif](course-collector.gif) 
 
 ## Output Format
 As shown below the courses output is organized by *subjects* which are in turn organized into *schools*.
