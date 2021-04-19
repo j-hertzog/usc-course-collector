@@ -6,11 +6,40 @@ A lightweight rust program that downloads all of the courses for a given semeste
 ## Output Format
 As shown below the courses output is organized by 'Subjects' which are in turn organized into 'Schools'.
 ```
-[ { "name": "Computer Science", "code": "CSCI", "courses": [ { "course_code": "CSCI-102", "course_title": "Fundamentals of Computation " }, { "course_code": "CSCI-103", "course_title": "Introduction to Programming " }, { "course_code": "CSCI-104", "course_title": "Data Structures and Object Oriented Design " }, ...  ] }, { "name": "Data Science", "code": "DSCI", "courses": [ { "course_code": "DSCI-351", "course_title": "Foundations of Data Management " }, ...  ] }, ...  ]
+[
+      {
+        "name": "Computer Science",
+        "code": "CSCI",
+        "courses": [
+          {
+            "course_code": "CSCI-102",
+            "course_title": "Fundamentals of Computation "
+          },
+          {
+            "course_code": "CSCI-103",
+            "course_title": "Introduction to Programming "
+          },
+          ...
+        ]
+      },
+      {
+        "name": "Data Science",
+        "code": "DSCI",
+        "courses": [
+          {
+            "course_code": "DSCI-351",
+            "course_title": "Foundations of Data Management "
+          },
+          ...
+        ]
+      },
+      ...
+]
 ```
 
 ## Installation
 - Requires [rust]() to be installed.
+- '**cargo run**' to start scraping.
 
 
 ##### Project Dependencies
